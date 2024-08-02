@@ -2,7 +2,13 @@
 
 ```markdown
 `Jsoner` - База данных типа ключ-значение
-на основе файлов типа JSON
+на основе JSON-файлов
+```
+
+## Копировать репозиторий
+
+```sh
+git clone https://github.com/dima-doroshenko/jsoner-database.git
 ```
 
 ## Использование
@@ -59,7 +65,7 @@ except ValueIsConstant:
 
 Теги и их значения записываются в словарь `tags`
 
-Файл db.json
+#### db.json
 ```json
 {
     "__settings__": {
