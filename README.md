@@ -87,10 +87,7 @@ except ValueIsConstant:
 С помощью класса `NewTag` можно создавать свои теги
 
 ```python
-from jsoner import Database
 from jsoner.tags import NewTag
-
-db = Database('db.json')
 
 class MyTag(NewTag):
 
@@ -195,7 +192,7 @@ from jsoner.errors import ValueIsConstant
 db = Database('data.json')
 
 # добавление глобального тега
-db.set_global_tag(const_tag: True)
+db.set_global_tag(const_tag, True)
 
 db.add('num', 123)
 db.update('num', 0)
@@ -260,7 +257,7 @@ class db(Cluster):
 ```
 В данном случае во всех задействованных базах атрибуту `autocommit` будет присвоено значение `True`
 
-Это работает со всеми атрибутами, которые можно передать при инициализации объета класса `Database`
+Это работает со всеми атрибутами, которые можно передать при инициализации объекта класса `Database`
 
 Если создать файл `cluster_settings.json` в папке с остальными файлами, то все его ключи станут атрибутами класса
 
