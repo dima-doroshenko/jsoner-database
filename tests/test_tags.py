@@ -16,9 +16,9 @@ def test_unique_add():
     db.add('key', 1)
     with pytest.raises(UniqueValueError):
         db.add('key_1', 1, {unique_tag: True})
-    db.add('unique_key', 10, {unique_tag: True})
 
 def test_unique_update():
+    db.add('unique_key', 10, {unique_tag: True})
     with pytest.raises(UniqueValueError):
         db.update('unique_key', 1)
 

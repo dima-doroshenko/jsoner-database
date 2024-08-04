@@ -1,18 +1,19 @@
 import json
 from .check import Check
 from .tags import Tags, NewTag
+from typing import Callable
 from .decorators import autocommit
 from . import errors
 from typing import Any, TypeAlias
 
-__version__ = '0.1'
+__version__ = '0.1.1'
 
 default_settings = {'__version__': __version__, 
                     'default': None,
                     'tags': {}, 
                     'global_tags': {}}
 
-JSONValue: TypeAlias = int | str | list | dict | float | tuple
+JSONValue: TypeAlias = int | str | list | dict | float | tuple | None
 
 class Database:
     '''`Объект базы данных`'''
@@ -64,13 +65,19 @@ class Database:
             json.dump(self.data, file, indent=self.indent, ensure_ascii=self.ensure_ascii) 
     
     @autocommit
-    def drop(self):
+    def drop(self) -> None:
         '''
         `Удалить все данные`
         '''
-        self.data = {self.settings: default_settings}
+        self.data = {self.settings: {
+            '__version__': __version__, 
+            'default': None,
+            'tags': {}, 
+            'global_tags': {}
+            }
+        }
 
-    def read_data(self) -> dict[str, Any]:
+    def read_data(self) -> dict[str, JSONValue]:
         try:
 
             with open(self.database_file, 'r') as file:
@@ -87,43 +94,27 @@ class Database:
         '''`Отменить все несохраненные изменения`'''
         self.data = self.read_data()
         
-    def get(self, key: str) -> Any | None:
+    def get(self, key: str) -> JSONValue:
         """
         `Получить значение по ключу`
         """
+
+        Check.is_key_string(key)
+
+        if key not in self.data: return self.data[self.settings]['default']
+
+        tags = Tags.get(self, key)
         
-        try:
-            Check.is_key_string(key)
+        for tag_name in list(tags.keys()):
 
-            match key:
+            for cls in NewTag.all:
 
-                case '*': 
-                    
-                    return [self.get(key) for key in self.keys]
-                
-                case _: 
+                if cls.__name__ == tag_name:
+                    if hasattr(cls, 'read'): return cls.read(self, key, self.data[key], tags[tag_name])
 
-                    try: 
-                        tags = Tags.get(self, key)
-                         
-                        for tag_name in list(tags.keys()):
-
-                            for cls in NewTag.all:
-
-                                if cls.__name__ == tag_name:
-                                    if hasattr(cls, 'read'): return cls.read(self, key, self.data[key], tags[tag_name])
-
-                        return self.data[key]
-
-                    except KeyError:
-
-                        return self.data[key]
-                    
-        except KeyError:
-
-            return self.data[self.settings]['default']
+        return self.data[key]
         
-    def get_many(self, *keys: tuple[str]) -> list[Any | None]:
+    def get_many(self, keys: tuple[str]) -> list[JSONValue]:
         '''`Получить значения по нескольким ключам`'''
         return [self.get(key) for key in keys]
 
@@ -180,7 +171,7 @@ class Database:
             self.add(key, value, tags)
 
     @autocommit
-    def incr(self, key: str, number: int | float) -> None:
+    def incr(self, key: str, number: int | float = 1) -> None:
         """
         `Увеличить значение`
         
@@ -193,7 +184,7 @@ class Database:
 
         self.data[key] += number
 
-    def decr(self, key: str, number: int | float) -> None:
+    def decr(self, key: str, number: int | float = 1) -> None:
         """
         `Уменьшить значение`
         
@@ -207,16 +198,16 @@ class Database:
         ans.remove(self.settings)
         return ans
 
-    def values(self) -> list[Any]:
+    def values(self) -> list[JSONValue]:
         '''`Все значения`'''
-        return self.get_many(*self.keys())
+        return self.get_many(self.keys())
     
-    def items(self) -> list[list[str, Any]]:
+    def items(self) -> list[list[str, JSONValue]]:
         '''`Все пары ключ-значение`'''
         return [(key, self.get(key)) for key in self.keys()]
     
     def __getitem__(self, key: str):
-        return self.get( str(key) )
+        return self.get(str(key))
     
     @autocommit
     def __setitem__(self, key: str, value: JSONValue):
@@ -226,6 +217,8 @@ class Database:
     def set_global_tag(self, tag: str | NewTag, value: Any) -> None:
         '''
         `Устанавливает глобальный тег`
+
+        :param value: Аргумент тега
         '''
         if not isinstance(tag, str): tag = tag.__name__
         self.data[self.settings]['global_tags'][tag] = value
@@ -245,5 +238,45 @@ class Database:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.autocommit = self.cache['autocommit']
         self.commit() if exc_type is None else self.discard()
+
+    def __str__(self) -> str:
+        return str(self.data)
+    
+    def __contains__(self, key: str) -> bool:
+        return key in self.data
+    
+    def find_all(self, func: Callable) -> list[tuple[str, JSONValue]]:
+        '''
+        `Поиск всех подходящих значений`
+
+        >>> db.find_all(lambda x: x > 3)
+        >>> [('key 4', 4), ('key 5', 5)]
+
+        :return: Список из пар ключ-значение
+        '''
+        result = []
+        data = self.data.copy()
+        data.pop(self.settings)
+
+        for key, value in list(data.items()):
+            if func(value):
+                result.append((key, self.get(key)))
+        return result
+    
+    def find_one(self, func: Callable) -> tuple[str, JSONValue] | None:
+        '''
+        `Поиск первого подходящего значения`
+
+        >>> db.find_one(lambda x: x > 3)
+        >>> ('key 4', 4)
+
+        :return: Пара ключ-значение
+        '''
+        data = self.data.copy()
+        data.pop(self.settings)
+
+        for key, value in list(data.items()):
+            if func(value):
+                return key, self.get(key)
 
 __all__ = ['Database']

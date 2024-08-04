@@ -6,18 +6,13 @@ db = Database('data.json')
 
 def drop_db():
     global db
-    db.data = {}
-    db.data[db.settings] = {'__version__': __version__, 
-                                        'default': None,
-                                        'tags': {}, 
-                                        'global_tags': {}}
-    db.commit()
+    db.drop()
 
 drop_db()
 
 @pytest.fixture
 def clear_db():
-    drop_db()  
+    drop_db()
 
 @pytest.fixture(scope='package', autouse=True)
 def package_fixture():

@@ -49,3 +49,12 @@ def test_set_global_tag():
     db.set_global_tag('ttl', 60)
 
     assert db.data[db.settings]['global_tags'] == {'const': True, 'ttl': 60}
+
+def test_find_all(clear_db):
+    for item in [('key 0', 0), ('key 1', 1), ('key 2', 2)]:
+        db.add(*item)
+
+    assert db.find_all(lambda x: x > 0) == [('key 1', 1), ('key 2', 2)]
+
+def test_find_one():
+    assert db.find_one(lambda x: x > 0) == ('key 1', 1)

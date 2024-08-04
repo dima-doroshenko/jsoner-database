@@ -132,7 +132,7 @@ class ttl_tag(NewTag):
 
 ```
 
-### Методы keys, values, items
+### Методы `keys`, `values`, `items`
 ```python
 from jsoner import Database
 
@@ -199,7 +199,7 @@ db.update('num', 0)
 >>> raise ValueIsConstant
 ```
 
-### Работа с оператором with
+### Работа с оператором `with`
 
 При входе в оператор `with` вызывается метод `db.discard()`, который стирает несохраненные в файл данные
 
@@ -220,6 +220,25 @@ print(db.items())
 >>> [('key', 'value')]
 ```
 
+### Методы `find_all`, `find_one`
+
+```python
+from jsoner import Database
+
+db = Database('data.json')
+
+# записанные данные
+[('key 0', 0), ('key 1', 1), ('key 2', 2)]
+
+# поиск всех совпадений
+db.find_all(lambda x: x > 0)
+# [('key 1', 1), ('key 2', 2)]]
+
+# поиск первого совпадения
+db.find_one(lambda x: x > 0)
+# ('key 1', 1)
+
+```
 
 ### Другие полезные методы
  - **discard** - стереть несохраненные в файлe данные
