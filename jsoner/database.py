@@ -6,7 +6,7 @@ from .decorators import autocommit
 from . import errors
 from typing import Any, TypeAlias
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 default_settings = {'__version__': __version__, 
                     'default': None,
@@ -51,8 +51,7 @@ class Database:
 
         try: 
             self.data[self.settings]
-            db_version = self.data[self.settings]['__version__']
-            if db_version != __version__:
+            if (db_version := self.data[self.settings]['__version__']) != __version__:
                 print(f"Текущая версия Jsoner {__version__} не совпадает с версией {db_version} базы данных {self.database_file}")
         except KeyError:
             self.data[self.settings] = default_settings
@@ -114,7 +113,7 @@ class Database:
 
         return self.data[key]
         
-    def get_many(self, keys: tuple[str]) -> list[JSONValue]:
+    def get_many(self, keys: list[str]) -> list[JSONValue]:
         '''`Получить значения по нескольким ключам`'''
         return [self.get(key) for key in keys]
 
@@ -161,7 +160,6 @@ class Database:
             Tags.delete(self, key)
         except: ...
 
-    @autocommit
     def set(self, key: str, value: JSONValue, tags: dict = {}) -> None:
         """`Установка значения`"""
 
@@ -194,9 +192,9 @@ class Database:
 
     def keys(self) -> list[str]:
         '''`Все ключи`'''
-        ans = list(self.data.keys())
-        ans.remove(self.settings)
-        return ans
+        res = list(self.data.keys())
+        res.remove(self.settings)
+        return res
 
     def values(self) -> list[JSONValue]:
         '''`Все значения`'''
@@ -209,7 +207,6 @@ class Database:
     def __getitem__(self, key: str):
         return self.get(str(key))
     
-    @autocommit
     def __setitem__(self, key: str, value: JSONValue):
         return self.set(key, value)
     
@@ -254,14 +251,10 @@ class Database:
 
         :return: Список из пар ключ-значение
         '''
-        result = []
         data = self.data.copy()
         data.pop(self.settings)
-
-        for key, value in list(data.items()):
-            if func(value):
-                result.append((key, self.get(key)))
-        return result
+    
+        return [(key, self.get(key)) for key, value in list(data.items()) if func(value)]
     
     def find_one(self, func: Callable) -> tuple[str, JSONValue] | None:
         '''

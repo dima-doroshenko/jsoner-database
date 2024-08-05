@@ -44,8 +44,8 @@ class NewTag:
     """
     all = []
 
-    def create(db, value, tag) -> Any:
-        return tag
+    def create(db, value, tag_arg) -> Any:
+        return tag_arg
     
     def __init_subclass__(cls) -> None:
 
@@ -70,29 +70,29 @@ class Tags:
         
         for tag_name, is_global in tags_list:
                 
-                if is_cls := not isinstance(tag_name, str): 
-                    tag_cls = tag_name
-                    tag_name = tag_name.__name__
+                try:
+                    if is_cls := issubclass(tag_name, NewTag): 
+                        tag_cls = tag_name
+                        tag_name = tag_name.__name__
+                except TypeError:
+                    is_cls = False
                 
                 try: self.data[self.settings]['tags'][key]
                 except KeyError: 
                     if not is_global: self.data[self.settings]['tags'][key] = {}
 
-                if tag_name in list(map(lambda x: x.__name__, NewTag.all)):
+                if not is_cls:
 
-                    for tag_cls in NewTag.all:
-                        
-                        if tag_name == tag_cls.__name__:
+                    tag_dict = {cls.__name__: cls for cls in NewTag.all}
+                    tag_cls = tag_dict.get(tag_name)
 
-                            if is_global: tag_data = global_tags[tag_name]
-                            else: tag_data = tags[tag_cls] if is_cls else tags[tag_name]
+                    if tag_cls is None: raise UnkownTag(f"Тег '{tag_name}' не найден")
 
-                            tag_create_result = tag_cls.create(self, value, tag_data)
-                            if not is_global: self.data[self.settings]['tags'][key][tag_name] = tag_create_result
-                    
-                else:
+                if is_global: tag_data = global_tags[tag_name]
+                else: tag_data = tags[tag_cls] if is_cls else tags[tag_name]
 
-                    raise UnkownTag(f"Тег '{tag_name}' не найден")
+                tag_create_result = tag_cls.create(self, value, tag_data)
+                if not is_global: self.data[self.settings]['tags'][key][tag_name] = tag_create_result                    
 
     @staticmethod
     def delete(self, key: str) -> None:

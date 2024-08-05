@@ -32,10 +32,10 @@ db.commit()
 db.update('key', 100)
 
 # увеличение значения на 5
-db.incr(key, 5)
+db.incr('key', 5)
 
 # уменьшение значения на 15
-db.decr(key, 15)
+db.decr('key', 15)
 
 # удаление
 db.delete('key')
