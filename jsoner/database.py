@@ -6,7 +6,7 @@ from .decorators import autocommit
 from . import errors
 from typing import Any, TypeAlias
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 default_settings = {'__version__': __version__, 
                     'default': None,

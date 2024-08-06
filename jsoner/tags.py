@@ -105,7 +105,7 @@ class Tags:
     def get(self, key: str) -> dict[str, Any]:
         stngs = self.data[self.settings]
         try:
-            return {**stngs['tags'][key], **stngs['global_tags']}
+            return {**stngs['global_tags'], **stngs['tags'][key]}
         except KeyError:
             return {**stngs['global_tags']}
     

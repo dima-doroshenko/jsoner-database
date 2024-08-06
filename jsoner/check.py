@@ -19,12 +19,12 @@ class Check:
         
     def is_number_float_or_int(number: int | float) -> None:
 
-        if not any((isinstance(number, int), isinstance(number,float))):
+        if not isinstance(number, (float, int)):
             raise TypeError("Число должно быть объектом класса int или float")
         
     def is_value_correct(value: Any):
         
-        if not type(value) in (str, int, float, list, dict, tuple): 
+        if not isinstance(value, (str, int, float, list, dict, tuple)): 
             raise TypeError(f'Объекты типа {value.__class__.__name__} не поддерживаются для перевода в JSON')
         
     def can_key_be_added(data: dict, key: str) -> None | bool:
@@ -37,31 +37,15 @@ class Check:
     def can_key_be_updated(self, key: str, value) -> None:
 
         tags = Tags.get(self, key)
+
+        result = value
             
         for tag_name in list(tags.keys()):
             for cls in NewTag.all:
                 if cls.__name__ == tag_name:
                     if hasattr(cls, 'update'): 
-                        result = cls.update(self, key, self.data[key], value, tags[tag_name])
-                        self.data[key] = result
-                        return
+                        result = cls.update(self, key, self.data[key], result, tags[tag_name])
 
-        self.data[key] = value
-
-        # try: 
-        #     tags = Tags.get(self, key)
-             
-        #     for tag_name in list(tags.keys()):
-        #         for cls in NewTag.all:
-        #             if cls.__name__ == tag_name:
-        #                 if hasattr(cls, 'update'): 
-        #                     result = cls.update(self, key, self.data[key], value, tags[tag_name])
-        #                     self.data[key] = result
-        #                     return
-
-        # except KeyError:
-        #     ...
-        # finally:
-        #     self.data[key] = value
+        self.data[key] = result
 
 __all__ = ['Check']
